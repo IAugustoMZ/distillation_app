@@ -108,6 +108,13 @@ class McCabeThiele:
         if self.T_f <= self.Tb:
             self.HF = (Cp / 1000) * (self.T_f - Tref)
 
+    def calculate_feed_vapor_enthalpy(self) -> None:
+        """
+        calculates the saturated vapor enthalpy of the feed stream
+        in [kJ/mol]
+        """
+        self.HV = (Cp / 1000) * (self.Tb - Tref) + Hvap
+
     def calculate_q_line(self) -> None:
         """
         calculates the q-line of the feed
@@ -115,14 +122,14 @@ class McCabeThiele:
 
         # the enthalpy of the vapor phase is ignores the sensible
         # heat
-        self.q = (Hvap - self.HF) / (Hvap)
+        self.q = (self.HV- self.HF) / (Hvap)
 
         # calculates the slope and the intercept
         self.m_q = (self.q) / (self.q - 1)
         self.b_q = (self.z_LK) / (self.q - 1)
 
         # create dataframe to store the q-line coordinates
-        self.q_data = pd.DataFrame(np.arange(0.2, self.z_LK + 0.01, 0.01), columns=['x_q'])
+        self.q_data = pd.DataFrame(np.arange(self.z_LK, 0.6 + 0.01, 0.01), columns=['x_q'])
         self.q_data['y_q'] = self.q_data['x_q'].apply(lambda x: self.m_q * x - self.b_q)
 
     def set_reflux_ratio(self, r: float) -> None:
@@ -314,6 +321,9 @@ class McCabeThiele:
         # calculate enthalpy of the feed stream
         self.calculate_feed_enthalpy()
 
+        # calculate the enthalpy of saturated vapor of the feed stream
+        self.calculate_feed_vapor_enthalpy()
+
         # calculate q-line
         self.calculate_q_line()
 
@@ -361,5 +371,6 @@ if __name__ == '__main__':
     plt.ylim([0, 1])
     plt.axvline(x=mccabe.xD, color='gray', ls='--')
     plt.axvline(x=mccabe.xB, color='gray', ls='--')
+    plt.title('Método de McCabe-Thiele - Sistema Benzeno e Tolueno\nP = 101,3 kPa', size=20)
     plt.grid(True, alpha=0.3)
     plt.show()
